@@ -1,0 +1,59 @@
+import time
+import board
+import adafruit_dht
+from gpiozero import DigitalInputDevice, LED, Buzzer
+
+pir = DigitalInputDevice(17)
+ir = DigitalInputDevice(27)
+mq2 = DigitalInputDevice(22)
+flame = DigitalInputDevice(12)
+
+dht = adafruit_dht.DHT11(board.D4)
+
+led = LED(23)
+buzzer = Buzzer(24)
+
+TEMP_THRESHOLD = 35
+
+print("Home Automation System Started")
+
+while True:
+    alarm = False
+
+    if pir.value and not ir.value:
+        print("Intruder has entered!")
+        alarm = True
+
+    if not mq2.value:
+        print("LPG leakage detected!")
+        alarm = True
+
+    if not flame.value:
+        print("Flame detected!")
+        alarm = True
+
+    try:
+        temperature = dht.temperature
+        humidity = dht.humidity
+
+        if temperature is not None:
+            print(f"Temperature = {temperature}°C")
+
+        if humidity is not None:
+            print(f"Humidity = {humidity}%")
+
+        if temperature is not None and temperature >= TEMP_THRESHOLD:
+            print("High temperature detected!")
+            alarm = True
+
+    except RuntimeError as e:
+        print("DHT11 Error:", e)
+
+    if alarm:
+        led.on()
+        buzzer.on()
+    else:
+        led.off()
+        buzzer.off()
+
+    time.sleep(1)
